@@ -22,12 +22,17 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
+import org.fairscan.imageprocessing.detectDocumentQuad
 import org.fairscan.imageprocessing.scaledTo
+import org.fairscan.imageprocessing.extractDocument
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.opencv.android.OpenCVLoader
+import org.opencv.android.Utils
+import org.opencv.core.Mat
+import org.opencv.imgproc.Imgproc
 import java.io.File
 import java.io.FileOutputStream
 
@@ -57,7 +62,19 @@ class DocumentDetectionTest {
                 if (quad != null) {
                     val resizedQuad =
                         quad.scaledTo(mask.width, mask.height, bitmap.width, bitmap.height)
-                    outputBitmap = extractDocument(bitmap, resizedQuad, 0)
+                    val rgba = Mat()
+                    Utils.bitmapToMat(bitmap, rgba)
+                    val bgr = Mat()
+                    Imgproc.cvtColor(rgba, bgr, Imgproc.COLOR_RGBA2BGR)
+                    rgba.release()
+                    val outBgr = extractDocument(bgr, resizedQuad, 0, mask)
+                    bgr.release()
+                    val outRgba = Mat()
+                    Imgproc.cvtColor(outBgr, outRgba, Imgproc.COLOR_BGR2RGBA)
+                    outputBitmap = Bitmap.createBitmap(outBgr.cols(), outBgr.rows(), Bitmap.Config.ARGB_8888)
+                    Utils.matToBitmap(outRgba, outputBitmap)
+                    outRgba.release()
+                    outBgr.release()
                     val file = File(context.getExternalFilesDir(null), imageFileName)
                     FileOutputStream(file).use {
                         outputBitmap.compress(Bitmap.CompressFormat.JPEG, 95, it)
