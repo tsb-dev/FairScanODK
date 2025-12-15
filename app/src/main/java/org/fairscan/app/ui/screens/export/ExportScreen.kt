@@ -124,6 +124,7 @@ fun ExportScreenWrapper(
             pdfActions.save()
         },
         onOpen = pdfActions.open,
+        onReturnResult = pdfActions.returnResult,
         onCloseScan = {
             if (uiState.hasSavedOrShared)
                 onCloseScan()
@@ -147,6 +148,7 @@ fun ExportScreen(
     onShare: () -> Unit,
     onSave: () -> Unit,
     onOpen: (SavedItem) -> Unit,
+    onReturnResult: (() -> Unit)? = null,
     onCloseScan: () -> Unit,
 ) {
     Scaffold(
@@ -170,7 +172,7 @@ fun ExportScreen(
             ) {
                 TextFieldAndPdfInfos(filename, onFilenameChange, uiState, onOpen)
                 Spacer(Modifier.weight(1f)) // push buttons down
-                MainActions(uiState, onShare, onSave, onCloseScan)
+                MainActions(uiState, onShare, onSave, onCloseScan, onReturnResult)
             }
         } else {
             Row(
@@ -184,7 +186,7 @@ fun ExportScreen(
                     TextFieldAndPdfInfos(filename, onFilenameChange, uiState, onOpen)
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    MainActions(uiState, onShare, onSave, onCloseScan)
+                    MainActions(uiState, onShare, onSave, onCloseScan, onReturnResult)
                 }
             }
 
@@ -264,38 +266,50 @@ private fun MainActions(
     onShare: () -> Unit,
     onSave: () -> Unit,
     onCloseScan: () -> Unit,
+    onReturnResult: (() -> Unit)? = null
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        if (onReturnResult != null) {
             ExportButton(
-                onClick = onShare,
+                onClick = onReturnResult,
                 enabled = uiState.result != null,
-                isPrimary = !uiState.hasSavedOrShared,
-                icon = Icons.Default.Share,
-                text = stringResource(R.string.share),
-                modifier = Modifier.weight(1f)
+                isPrimary = true,
+                icon = Icons.Default.Done,
+                text = stringResource(R.string.return_result),
+                modifier = Modifier.fillMaxWidth()
             )
+        } else {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                ExportButton(
+                    onClick = onShare,
+                    enabled = uiState.result != null,
+                    isPrimary = !uiState.hasSavedOrShared,
+                    icon = Icons.Default.Share,
+                    text = stringResource(R.string.share),
+                    modifier = Modifier.weight(1f)
+                )
+                ExportButton(
+                    onClick = onSave,
+                    enabled = uiState.result != null,
+                    isPrimary = !uiState.hasSavedOrShared,
+                    icon = Icons.Default.Download,
+                    text = stringResource(R.string.save),
+                    modifier = Modifier.weight(1f)
+                )
+            }
             ExportButton(
-                onClick = onSave,
-                enabled = uiState.result != null,
-                isPrimary = !uiState.hasSavedOrShared,
-                icon = Icons.Default.Download,
-                text = stringResource(R.string.save),
-                modifier = Modifier.weight(1f)
+                icon = Icons.Default.Done,
+                text = stringResource(R.string.end_scan),
+                onClick = onCloseScan,
+                modifier = Modifier.fillMaxWidth(),
+                isPrimary = uiState.hasSavedOrShared,
             )
         }
-        ExportButton(
-            icon = Icons.Default.Done,
-            text = stringResource(R.string.end_scan),
-            onClick = onCloseScan,
-            modifier = Modifier.fillMaxWidth(),
-            isPrimary = uiState.hasSavedOrShared,
-        )
     }
 }
 
