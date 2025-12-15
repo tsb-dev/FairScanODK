@@ -306,4 +306,5 @@ data class ExportActions(
     val share: () -> Unit,
     val save: () -> Unit,
     val open: (SavedItem) -> Unit,
+    val returnResult: (() -> Unit)? = null
 )
