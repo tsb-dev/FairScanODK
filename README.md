@@ -6,9 +6,9 @@ This is a fork of [FairScan](https://github.com/pynicolas/FairScan) app modified
 
 ---
 
-```
+---
 
 ## License
 This project is licensed under the GNU GPLv3. See LICENSE for details.
 
-```
+---
