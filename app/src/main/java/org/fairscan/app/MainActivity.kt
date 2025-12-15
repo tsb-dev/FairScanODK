@@ -22,6 +22,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
+import android.app.Activity
 import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.Q
@@ -137,6 +138,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     is Screen.Main.Export -> {
+                        val isExternalCall = callingActivity != null
                         ExportScreenWrapper(
                             navigation = navigation,
                             uiState = exportUiState,
@@ -145,12 +147,36 @@ class MainActivity : ComponentActivity() {
                                 setFilename = exportViewModel::setFilename,
                                 share = { share(exportViewModel.applyRenaming(), exportViewModel) },
                                 save = { exportViewModel.onSaveClicked() },
-                                open = { item -> openUri(item.uri, item.format.mimeType) }
+                                open = { item -> openUri(item.uri, item.format.mimeType) },
+                                returnResult = if (isExternalCall) {
+                                    {
+                                        val result = exportViewModel.applyRenaming()
+                                        if (result is ExportResult.Pdf) {
+                                            val fileUri = FileProvider.getUriForFile(
+                                                this@MainActivity,
+                                                "${packageName}.fileprovider",
+                                                result.file
+                                            )
+
+                                            val resultIntent = Intent().apply {
+                                                data = fileUri
+                                                clipData = ClipData.newRawUri(null, fileUri)
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            }
+                                            
+                                            callingActivity?.packageName?.let { callerPkg ->
+                                                grantUriPermission(callerPkg, fileUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            }
+
+                                            setResult(Activity.RESULT_OK, resultIntent)
+                                            finish()
+                                        }
+                                    }
+                                } else null
                             ),
                             onCloseScan = {
-                                viewModel.startNewDocument()
-                                viewModel.navigateTo(Screen.Main.Home)
-                            },
+                                viewModel.startNewDocument()   
+                            }
                         )
                     }
                     is Screen.Overlay.About -> {
